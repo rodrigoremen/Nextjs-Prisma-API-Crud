@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNotes } from '@/context/noteContext'
 
 function NodeForm() {
@@ -9,13 +9,26 @@ function NodeForm() {
     const [content, setContent] = useState('')
     const titleRef = useRef<HTMLInputElement>(null)
 
-    const { createNotes, selectedNote } = useNotes();
+    const { createNotes, selectedNote, setSelectedNote, updateNotes } = useNotes();
+
+    useEffect(() => {
+        if (selectedNote) {
+            setTitle(selectedNote.title)
+            setContent(selectedNote.content || '')
+        }
+    }
+        , [selectedNote])
 
 
     return (
         <form onSubmit={async (e) => {
             e.preventDefault()
-            await createNotes({ title, content });
+            if ( selectedNote ) {
+                await updateNotes(selectedNote.id, { title, content })
+                setSelectedNote(null)
+            } else {
+                await createNotes({ title, content })
+            }
             setTitle('')
             setContent('')
             titleRef.current?.focus()
@@ -38,12 +51,31 @@ function NodeForm() {
                 onChange={(e) => setContent(e.target.value)}
                 value={content}
             />
-            <button
-                type="submit"
-                className='px-5 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700'
 
-            >Submit
-            </button>
+            <div className='flex justify-end gap-x-2'>
+                <button
+                    type="submit"
+                    className='px-5 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                    disabled={!title || !content }
+                >{
+                    selectedNote ? 'Update' : 'Create'
+                }
+                </button>
+                {
+                    selectedNote && (
+                        <button
+                            type="button"
+                            className='px-5 py-2 text-white bg-red-600 rounded-md hover:bg-red-700'
+                            onClick={() => {
+                                setSelectedNote(null)
+                                setTitle('')
+                                setContent('')
+                            }}
+                        >Cancel
+                        </button>
+                    )
+                }
+            </div>
         </form>
     )
 }

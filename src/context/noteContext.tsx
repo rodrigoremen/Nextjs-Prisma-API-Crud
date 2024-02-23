@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useState, useContext } from 'react';
-import { CreateNote } from '@/interfaces/Note';
+import { CreateNote, UpdateNote } from '@/interfaces/Note';
 import { Note } from '@prisma/client';
 
 export const NoteContext = createContext<
@@ -12,6 +12,7 @@ export const NoteContext = createContext<
 		deleteNote: (id: number) => Promise<void>;
 		selectedNote: Note | null;
 		setSelectedNote: (note: Note | null) => void;
+		updateNotes: (id: number, note: UpdateNote) => Promise<void>;
 	}
 >({
 	notes: [],
@@ -19,7 +20,8 @@ export const NoteContext = createContext<
 	createNotes: async (note: CreateNote) => { },
 	deleteNote: async (id: number) => { },
 	selectedNote: null,
-	setSelectedNote: (note: Note | null) => { }
+	setSelectedNote: (note: Note | null) => { },
+	updateNotes: async (id: number, note: UpdateNote) => { }
 });
 
 export const useNotes = () => {
@@ -61,6 +63,18 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
 		setNotes(notes.filter(note => note.id !== id))
 	}
 
+	async function updateNotes(id:number,note: UpdateNote) {
+		const res = await fetch(`http://localhost:3000/api/notes/` + id, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(note)
+		})
+		const data = await res.json()
+		setNotes(notes.map(note => note.id === id ? { ...note, ...data } : note))
+	}
+
 	return (
 		<NoteContext.Provider value={{ 
 			notes, 
@@ -68,7 +82,9 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
 			createNotes, 
 			deleteNote, 
 			selectedNote, 
-			setSelectedNote }}>
+			setSelectedNote,
+			updateNotes
+			 }}>
 			{children}
 		</NoteContext.Provider>
 	);
